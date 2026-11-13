@@ -227,7 +227,6 @@ The verified evidence does not settle, among other things:
 These are reported as uncertainties or explicit unsupported outcomes rather than
 filled in with invented defaults.
 
-## License status
+## License
 
-No license has been selected or claimed for this project. The repository is
-private pending an owner licensing decision.
+Licensed under the [MIT License](LICENSE).
