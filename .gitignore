@@ -1,0 +1,9 @@
+.build/
+.build-testing/
+DerivedData/
+DerivedData.noindex/
+.swiftpm/
+Package.resolved
+.DS_Store
+*.xcodeproj
+xcuserdata/
