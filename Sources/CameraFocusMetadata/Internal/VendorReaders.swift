@@ -207,7 +207,7 @@ enum VendorReaders {
             tag: 0x1021,
             expectedType: 3,
             expectedCount: 1,
-            name: "Focus point setting",
+            name: "Vendor tag 0x1021 value",
             index: index,
             context: context,
             outcome: &outcome
@@ -216,7 +216,7 @@ enum VendorReaders {
             tag: 0x102D,
             expectedType: 4,
             expectedCount: 1,
-            name: "Packed focus setting",
+            name: "Vendor tag 0x102d value",
             index: index,
             context: context,
             outcome: &outcome
@@ -225,7 +225,7 @@ enum VendorReaders {
             tag: 0x1301,
             expectedType: 3,
             expectedCount: 1,
-            name: "Focus warning field",
+            name: "Vendor tag 0x1301 value",
             index: index,
             context: context,
             outcome: &outcome
@@ -334,7 +334,7 @@ enum VendorReaders {
             tag: 0x004B,
             expectedType: 4,
             expectedCount: 1,
-            name: "Recorded image width",
+            name: "Vendor tag 0x004b value",
             index: index,
             context: outerContext,
             outcome: &outcome
@@ -343,7 +343,7 @@ enum VendorReaders {
             tag: 0x004C,
             expectedType: 4,
             expectedCount: 1,
-            name: "Recorded image height",
+            name: "Vendor tag 0x004c value",
             index: index,
             context: outerContext,
             outcome: &outcome
@@ -490,7 +490,7 @@ enum VendorReaders {
             tag: 0x0303,
             expectedType: 3,
             expectedCount: 1,
-            name: "AF setting word",
+            name: "Vendor tag 0x0303 value",
             index: settingsIndex,
             context: context,
             outcome: &outcome
@@ -499,7 +499,7 @@ enum VendorReaders {
             tag: 0x0304,
             expectedType: 4,
             expectedCount: 64,
-            name: "AF area storage",
+            name: "Vendor tag 0x0304 values",
             index: settingsIndex,
             context: context,
             outcome: &outcome
@@ -512,7 +512,7 @@ enum VendorReaders {
                     outcome.records.append(
                         VendorRawRecord(
                             tag: 0x0305,
-                            name: "AF area rational storage",
+                            name: "Vendor tag 0x0305 values",
                             fieldType: entry.type,
                             values: .rationals(rationals)
                         )
@@ -641,7 +641,7 @@ enum VendorReaders {
                 outcome.records.append(
                     VendorRawRecord(
                         tag: 0x021F,
-                        name: "AF state block",
+                        name: "Vendor tag 0x021f bytes",
                         fieldType: entry.type,
                         values: .unsignedBytes(try context.readValue(of: entry))
                     )

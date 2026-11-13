@@ -106,7 +106,7 @@ struct VendorObservationTests {
                 == .unsignedWords([1281, 1163])
         )
         #expect(
-            record(report, tag: 0x102D, name: "Packed focus setting")?.values
+            record(report, tag: 0x102D, name: "Vendor tag 0x102d value")?.values
                 == .unsignedWords([513])
         )
     }
@@ -149,7 +149,7 @@ struct VendorObservationTests {
             case .unsignedWords(let area)? = record(
                 report,
                 tag: 0x0304,
-                name: "AF area storage"
+                name: "Vendor tag 0x0304 values"
             )?.values
         else {
             Issue.record("Missing Olympus area storage")
@@ -161,7 +161,7 @@ struct VendorObservationTests {
             case .rationals(let rationals)? = record(
                 report,
                 tag: 0x0305,
-                name: "AF area rational storage"
+                name: "Vendor tag 0x0305 values"
             )?.values
         else {
             Issue.record("Missing Olympus rational storage")
@@ -193,7 +193,7 @@ struct VendorObservationTests {
             case .unsignedBytes(let block)? = record(
                 report,
                 tag: 0x021F,
-                name: "AF state block"
+                name: "Vendor tag 0x021f bytes"
             )?.values
         else {
             Issue.record("Missing Pentax AF state block")
