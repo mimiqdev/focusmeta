@@ -315,6 +315,7 @@ struct TestHEIFBuilder {
     var primaryAssociations: [Int]? = nil
     var additionalAssociations: [(item: UInt32, indices: [Int])] = []
     var includeCDSC = true
+    var cdscTargets: [UInt32]? = nil
     var displacement: UInt32 = 6
     var extentOverride: (offset: UInt32, length: UInt32)? = nil
     var extentCount: Int = 1
@@ -419,8 +420,11 @@ struct TestHEIFBuilder {
         if includeCDSC {
             var cdscPayload: [UInt8] = []
             TestSupport.appendUInt16(UInt16(exifItemID), to: &cdscPayload, order: .bigEndian)
-            TestSupport.appendUInt16(1, to: &cdscPayload, order: .bigEndian)
-            TestSupport.appendUInt16(UInt16(primaryItemID), to: &cdscPayload, order: .bigEndian)
+            let targets = cdscTargets ?? [primaryItemID]
+            TestSupport.appendUInt16(UInt16(targets.count), to: &cdscPayload, order: .bigEndian)
+            for target in targets {
+                TestSupport.appendUInt16(UInt16(target), to: &cdscPayload, order: .bigEndian)
+            }
             irefPayload.append(contentsOf: box("cdsc", cdscPayload))
         }
         let iref = fullBox("iref", version: 0, flags: 0, payload: irefPayload)
@@ -581,6 +585,19 @@ struct SonyVectorEditor {
             return entry + 8
         }
         return Int(TestSupport.readUInt32(bytes, at: entry + 8, order: order))
+    }
+
+    mutating func setIFD0Orientation(_ value: UInt16) throws {
+        let ifd0 = Int(TestSupport.readUInt32(bytes, at: 4, order: order))
+        let count = Int(TestSupport.readUInt16(bytes, at: ifd0, order: order))
+        for index in 0..<count {
+            let entry = ifd0 + 2 + index * 12
+            if TestSupport.readUInt16(bytes, at: entry, order: order) == 0x0112 {
+                TestSupport.writeUInt16(value, to: &bytes, at: entry + 8, order: order)
+                return
+            }
+        }
+        throw EditError.missingTag
     }
 
     mutating func setMakerNoteDeclaredLength(_ length: UInt32) {

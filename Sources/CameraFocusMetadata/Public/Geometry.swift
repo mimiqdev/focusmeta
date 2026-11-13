@@ -424,6 +424,8 @@ public enum OrientationResolution: String, Sendable, Hashable {
     case primaryImageRotationOnly
     /// Both representations exist. Their precedence is not established by the verified samples.
     case multipleSourcesUnverified
+    /// A primary-image transform was present but could not be interpreted safely.
+    case unsupportedPrimaryImageTransform
     /// An orientation field exists but its value is outside the published eight values.
     case unrecognized
     case none

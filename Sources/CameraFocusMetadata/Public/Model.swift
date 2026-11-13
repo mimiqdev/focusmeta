@@ -313,6 +313,8 @@ public enum Uncertainty: String, Sendable, Hashable {
     case secondLocationRelationUnverified
     /// Both Exif and HEIF orientation sources exist, with unestablished precedence.
     case orientationPrecedenceUnestablished
+    /// A HEIF primary-image transform was unsupported, invalid, or ambiguous.
+    case primaryImageTransformUnsupported
     /// No orientation source was found, so display geometry was not derived.
     case displayOrientationUnknown
     /// The location record's reference extent differs from the image extent.

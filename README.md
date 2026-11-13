@@ -99,6 +99,11 @@ and an HIF. The library reads:
 | Sony | `0x204a` | Second four-word location record, retained and compared |
 | Sony | `0x2020` | Raw legacy point-use bytes |
 
+The HEIF Exif item must have an explicit `cdsc` association exclusively to the
+declared primary item. An item linked elsewhere, an absent association, or an
+ambiguous association is reported as unsupported instead of being attached to
+the primary image.
+
 The frame record's third word is an availability-related word of unverified bit
 meaning. Reference tools displayed no frame for word 0 and displayed the frame
 for 1, 256, 257, and 65535. The library uses those observations only to decide
@@ -127,9 +132,12 @@ clockwise, matching Exif orientation 8 in the verified pairs.
 
 If both an Exif orientation and a HEIF primary-image rotation exist, the library
 keeps both raw records, reports `.multipleSourcesUnverified`, sets no display
-transform, and does not claim precedence. Display geometry is produced only
-with one unambiguous orientation source. A recorded focus tuple is never assumed
-to be already rotated.
+transform, and does not claim precedence. An associated `imir` or `clap`, more
+than one associated `irot`, an unreadable transform payload, or an invalid
+primary transform association reports `.unsupportedPrimaryImageTransform` and
+suppresses display transform/geometry while retaining the other stored
+observations. Display geometry is produced only with one unambiguous orientation
+source. A recorded focus tuple is never assumed to be already rotated.
 
 ## Other manufacturers
 
@@ -155,6 +163,9 @@ support claim.
 - Every offset, count, type width, and multiplication is validated before use.
 - Directory depth, entry counts, box counts, MakerNote size, Exif item size, and
   total read bytes are bounded. Directory cycles are rejected.
+- A MakerNote directory table is bounded by the declared MakerNote extent even
+  when later bytes exist in the file. MakerNote out-of-line values retain their
+  verified enclosing-TIFF-relative offsets and bounds.
 - HIF Exif values are bounded by the Exif item extent. Out-of-line TIFF values
   are bounded by the enclosing TIFF or MakerNote region.
 - The report contains no file paths, serial numbers, GPS data, timestamps, or

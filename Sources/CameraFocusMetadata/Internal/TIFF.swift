@@ -103,10 +103,6 @@ struct TIFFEntryIndex {
         guard !duplicateTags.contains(tag) else { return nil }
         return entries.first { $0.tag == tag }
     }
-
-    func entries(tag: UInt16) -> [TIFFEntry] {
-        entries.filter { $0.tag == tag }
-    }
 }
 
 /// A TIFF context. `base` is the offset origin used by out-of-line values.
@@ -332,19 +328,21 @@ enum TIFFDirectoryParser {
         context: TIFFContext,
         limits: FocusMetadataReader.Limits,
         visited: inout Set<Int>,
-        depth: Int
+        depth: Int,
+        tableEnd: Int? = nil
     ) throws -> TIFFEntryIndex {
         guard depth <= limits.maximumIFDDepth else {
             throw ParseFailure.limitExceeded
         }
-        guard directoryOffset >= 0, directoryOffset <= context.regionEnd else {
+        let tableLimit = min(tableEnd ?? context.regionEnd, context.regionEnd)
+        guard directoryOffset >= 0, directoryOffset <= tableLimit else {
             throw ParseFailure.outOfBounds
         }
         guard !visited.contains(directoryOffset) else {
             throw ParseFailure.invalidIFD
         }
         visited.insert(directoryOffset)
-        guard context.regionEnd - directoryOffset >= 2 else {
+        guard tableLimit - directoryOffset >= 2 else {
             throw ParseFailure.truncated
         }
 
@@ -353,7 +351,7 @@ enum TIFFDirectoryParser {
             throw ParseFailure.limitExceeded
         }
         let entryBytes = Int(count) * 12
-        guard entryBytes <= context.regionEnd - directoryOffset - 2 else {
+        guard entryBytes <= tableLimit - directoryOffset - 2 else {
             throw ParseFailure.truncated
         }
         let table = try reader.read(at: directoryOffset + 2, count: entryBytes)

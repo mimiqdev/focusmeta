@@ -58,7 +58,6 @@ enum TIFFMetadataExtractor {
         let model = readASCII(ifd0, tag: 0x0110, context: context, builder: builder)
         let software = readASCII(ifd0, tag: 0x0131, context: context, builder: builder)
         let vendor = cameraVendor(make: make, model: model)
-        builder.isSony = vendor == .sony
         if make != nil || model != nil || software != nil {
             builder.camera = CameraIdentity(
                 vendor: vendor,
@@ -603,7 +602,6 @@ enum TIFFMetadataExtractor {
             limits: limits,
             imageExtent: imageExtent
         )
-        builder.isSony = true
         builder.focusPathSupported = true
         builder.addIssues(outcome.issues)
         builder.addUncertainties(outcome.uncertainties)

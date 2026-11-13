@@ -72,13 +72,7 @@ enum HEIFReader {
             )
         else {
             builder.focusPathUnsupported = true
-            if !exifItems.isEmpty {
-                builder.addIssue(
-                    .unsupportedHEIFLayout,
-                    context: "HEIF Exif item",
-                    detail: "More than one candidate Exif item was present."
-                )
-            } else {
+            if exifItems.isEmpty {
                 builder.addIssue(
                     .unsupportedHEIFLayout,
                     context: "HEIF Exif item",
@@ -265,25 +259,53 @@ enum HEIFReader {
         builder: ExtractionBuilder
     ) -> HEIFItemInfo? {
         guard !exifItems.isEmpty else { return nil }
+
+        let cdscReferences = metadata.references.filter { $0.type == "cdsc" }
+        func targets(for item: HEIFItemInfo) -> [UInt32]? {
+            let references = cdscReferences.filter { $0.fromItemID == item.itemID }
+            guard !references.isEmpty else { return nil }
+            return references.flatMap(\.toItemIDs)
+        }
+
         if exifItems.count == 1 {
-            return exifItems[0]
-        }
-        let referenced = exifItems.filter { item in
-            metadata.references.contains { reference in
-                reference.type == "cdsc"
-                    && reference.fromItemID == item.itemID
-                    && reference.toItemIDs.contains(primaryItemID)
+            let item = exifItems[0]
+            guard let targets = targets(for: item) else {
+                builder.addIssue(
+                    .unsupportedHEIFLayout,
+                    context: "HEIF Exif item cdsc",
+                    detail: "The Exif item had no explicit cdsc association."
+                )
+                return nil
             }
+            guard targets == [primaryItemID] else {
+                builder.addIssue(
+                    .unsupportedHEIFLayout,
+                    context: "HEIF Exif item cdsc",
+                    detail:
+                        "The Exif item is not linked exclusively to the declared primary item."
+                )
+                return nil
+            }
+            return item
         }
-        if referenced.count == 1 {
+
+        let primaryLinked = exifItems.filter { targets(for: $0) == [primaryItemID] }
+        guard primaryLinked.count == 1 else {
             builder.addIssue(
-                .unverifiedGeometry,
+                .unsupportedHEIFLayout,
                 context: "HEIF Exif item selection",
-                detail: "Multiple Exif items existed; the one referencing the primary item was used."
+                detail:
+                    "Multiple Exif items were present without one exclusive primary-item association."
             )
-            return referenced[0]
+            return nil
         }
-        return nil
+        builder.addIssue(
+            .unverifiedGeometry,
+            context: "HEIF Exif item selection",
+            detail:
+                "Multiple Exif items existed; the only item explicitly linked to the primary item was used."
+        )
+        return primaryLinked[0]
     }
 
     private static func primaryImageExtent(
@@ -343,12 +365,27 @@ enum HEIFReader {
         reader: BoundedReader,
         builder: ExtractionBuilder
     ) -> PrimaryImageRotation? {
+        if let associations = metadata.associations[primaryItemID] {
+            let hasInvalidIndex = associations.contains {
+                $0.propertyIndex < 1 || $0.propertyIndex > metadata.properties.count
+            }
+            if hasInvalidIndex {
+                builder.primaryImageTransformUnsupported = true
+                builder.addIssue(
+                    .unexpectedFieldShape,
+                    context: "HEIF primary ipma",
+                    detail: "A transform association referenced an unknown property index."
+                )
+            }
+        }
+
         let properties = associatedProperties(
             itemID: primaryItemID,
             metadata: metadata
         )
         let unsupported = properties.filter { $0.type == "imir" || $0.type == "clap" }
         if !unsupported.isEmpty {
+            builder.primaryImageTransformUnsupported = true
             builder.addIssue(
                 .unsupportedHEIFLayout,
                 context: "HEIF primary image transforms",
@@ -358,6 +395,7 @@ enum HEIFReader {
         }
         let rotations = properties.filter { $0.type == "irot" }
         if rotations.count > 1 {
+            builder.primaryImageTransformUnsupported = true
             builder.addIssue(
                 .unexpectedFieldShape,
                 context: "HEIF primary irot",
@@ -367,6 +405,7 @@ enum HEIFReader {
         }
         guard let property = rotations.first else { return nil }
         guard property.payloadEnd > property.payloadStart else {
+            builder.primaryImageTransformUnsupported = true
             builder.addIssue(
                 .truncatedData,
                 context: "HEIF primary irot"
@@ -377,9 +416,11 @@ enum HEIFReader {
             let payload = try reader.u8(at: property.payloadStart)
             return PrimaryImageRotation(rawPayload: payload)
         } catch let failure as ParseFailure {
+            builder.primaryImageTransformUnsupported = true
             builder.addIssue(failure: failure, context: "HEIF primary irot")
             return nil
         } catch {
+            builder.primaryImageTransformUnsupported = true
             return nil
         }
     }

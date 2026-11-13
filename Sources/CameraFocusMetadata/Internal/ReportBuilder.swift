@@ -7,6 +7,7 @@ final class ExtractionBuilder {
     var imageExtent: PixelExtent?
     var exifOrientation: ExifOrientationRecord?
     var primaryImageRotation: PrimaryImageRotation?
+    var primaryImageTransformUnsupported = false
     var focus: RecordedFocus?
     var issues: [MetadataIssue] = []
     var uncertainties: [Uncertainty] = []
@@ -14,7 +15,6 @@ final class ExtractionBuilder {
     var focusPathMalformed = false
     var focusPathUnsupported = false
     var focusPathSupported = false
-    var isSony = false
 
     init(container: ContainerDescription) {
         self.container = container
@@ -63,6 +63,31 @@ final class ExtractionBuilder {
     private func resolveOrientation() -> OrientationFacts {
         let exif = exifOrientation
         let rotation = primaryImageRotation
+
+        if primaryImageTransformUnsupported {
+            addUncertainty(.primaryImageTransformUnsupported)
+            if let exif, exif.orientation == nil {
+                addIssue(
+                    .unrecognizedOrientation,
+                    context: "Exif tag 0x0112",
+                    detail: "Raw value \(exif.rawValue) is outside the eight standard values."
+                )
+            }
+            if let rotation, rotation.transform == nil {
+                addIssue(
+                    .unrecognizedOrientation,
+                    context: "HEIF primary-image irot",
+                    detail: "Raw payload \(rotation.rawPayload) is outside the observed 0...3 range."
+                )
+            }
+            return OrientationFacts(
+                exif: exif,
+                primaryImageRotation: rotation,
+                resolution: .unsupportedPrimaryImageTransform,
+                displayTransform: nil,
+                displayExtent: nil
+            )
+        }
 
         if let exif, let rotation {
             addUncertainty(.orientationPrecedenceUnestablished)
@@ -209,13 +234,7 @@ final class ExtractionBuilder {
             return .malformed
         }
         if let focus {
-            if isSony, focus.sony != nil {
-                return .verifiedSonyFocusMetadata
-            }
-            if focus.sony != nil {
-                return .verifiedSonyFocusMetadata
-            }
-            return .rawVendorObservation
+            return focus.sony != nil ? .verifiedSonyFocusMetadata : .rawVendorObservation
         }
         if focusPathUnsupported {
             return .unsupported

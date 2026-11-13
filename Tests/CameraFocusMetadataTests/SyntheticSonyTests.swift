@@ -253,6 +253,36 @@ struct SyntheticSonyTests {
         #expect(report.uncertainties.contains(.displayOrientationUnknown) == false)
     }
 
+    @Test("The declared MakerNote extent bounds the Sony directory table")
+    func makerNoteTableBound() throws {
+        let vector = try #require(HandoffVectors.metadata.first { $0.id == "le-header" })
+        var editor = try SonyVectorEditor(hex: vector.hex)
+        // Prefix + count + two complete entries + half of the third entry.
+        editor.setMakerNoteDeclaredLength(44)
+        let report = try parse(editor.bytes)
+        #expect(report.status == .malformed)
+        #expect(report.focus == nil)
+        #expect(
+            report.issues.contains {
+                $0.kind == .truncatedData || $0.kind == .malformedMakerNote
+            }
+        )
+    }
+
+    @Test("An unrecognized Exif orientation never produces display geometry")
+    func unrecognizedExifOrientation() throws {
+        let vector = try #require(HandoffVectors.metadata.first { $0.id == "le-header" })
+        var editor = try SonyVectorEditor(hex: vector.hex)
+        try editor.setIFD0Orientation(9)
+        let report = try parse(editor.bytes)
+        #expect(report.focus?.geometry.isRegion == true)
+        #expect(report.orientation.exif?.rawValue == 9)
+        #expect(report.orientation.resolution == .unrecognized)
+        #expect(report.orientation.displayTransform == nil)
+        #expect(report.displayGeometry == nil)
+        #expect(report.issues.contains { $0.kind == .unrecognizedOrientation })
+    }
+
     @Test("A missing orientation does not produce display geometry")
     func missingOrientation() throws {
         let tiff = TestTIFFBuilder(

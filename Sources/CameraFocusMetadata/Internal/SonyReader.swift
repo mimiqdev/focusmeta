@@ -50,7 +50,8 @@ enum SonyReader {
                 context: context,
                 limits: limits,
                 visited: &visited,
-                depth: 1
+                depth: 1,
+                tableEnd: makerNoteEnd
             )
         } catch let failure as ParseFailure {
             outcome.issues.append(

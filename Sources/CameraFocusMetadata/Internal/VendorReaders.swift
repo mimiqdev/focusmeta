@@ -273,7 +273,8 @@ enum VendorReaders {
                 context: outerContext,
                 limits: limits,
                 visited: &visited,
-                depth: 1
+                depth: 1,
+                tableEnd: makerNoteOffset + makerNoteLength
             )
         } catch let failure as ParseFailure {
             outcome.issues.append(
